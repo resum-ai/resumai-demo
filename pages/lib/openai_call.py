@@ -1,8 +1,10 @@
 import os
+
+import streamlit
 from openai import OpenAI
 
 
-client = OpenAI(api_key='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')
+client = OpenAI(api_key=streamlit.secrets["OPENAI_API_KEY"])
 
 
 def get_chat_openai(prompt, model="gpt-3.5-turbo"):
