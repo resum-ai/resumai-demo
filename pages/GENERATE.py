@@ -1,12 +1,16 @@
 import pickle
 import streamlit as st
-from pages.lib.openai_call import get_embedding
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+from pages.lib.openai_call import get_embedding, get_chat_openai
+from pages.lib.prompts import SEARCH_PROMPT
+from pages.lib.store_vector import store_vector
 
-# question = st.text_input("질문을 입력해주세요.")
-# answer = st.text_input("질문에 대한 답을 입력해주세요.")
+st.set_page_config(
+    page_title="Hello",
+    page_icon="👋",
+)
 
-# QA 쌍이 있음 -> 해당 쌍마다 [Answer | Number | Question Embedding] 으로 저장.
-# Question 들어오면 Question과 Question Embedding과의 코사인 유사도 구해서 제일 높은거 3개의 answer을 context로 첨부
 data = [
     {
         "Question": "[지원동기] 우리 회사 체험형 인턴 프로그램에 지원한 목적을 서술해 주십시오.",
@@ -44,21 +48,34 @@ data = [
 ]
 
 
-answer_list = []
-qa_number = []
-question_embedding = []
+with st.spinner('답변 생성을 위한 사전 작업을 준비중입니다. 잠시만 기다려주세요.'):
+    status_code = store_vector(data)
+    if status_code == 200:
+        st.success('사전 작업이 완료되었습니다!')
+    else:
+        st.error(f'사전 작업이 다음 code로 실패하였습니다.: {status_code}')
 
-for data_index in range(len(data)):
-    # st.write(f"# {qa_number}")
-    question = data[data_index]["Question"]
-    answer = data[data_index]["Answer"]
-    # st.write(text)
+sentence = st.text_input("회사에 지원하게 된 동기에 대해서 설명해주세요.")
+if st.button("DB 내의 비슷한 질문에 대한 답변 찾아보기"):
+    query_embedding = get_embedding(sentence)
+    with open("self_introductions.pickle", "rb") as f:
+        total_data = pickle.load(f)
 
-    answer_list.append(answer)
-    qa_number.append(data_index+1)
-    question_embedding.append(get_embedding(question + "\n" + answer))
+    answer_list = total_data["answer_list"]
+    question_embedding = total_data["question_embedding"]
 
-    paragraph_dict = {"answer_list": answer_list, "qa_number": qa_number, "question_embedding": question_embedding}
-    with open('self_introductions.pickle', 'wb') as f:
-        pickle.dump(paragraph_dict, f)
+    query_embedding = np.array(query_embedding)
+    context_embedding = np.array(question_embedding)
 
+    similarity_scores = cosine_similarity([query_embedding], context_embedding)
+    max_index = np.argmax(similarity_scores) # TODO: argmax 말고 top3의 유사한 유사한 context를 얻어야 함 (few-shot으로 주기 위함)
+
+    context = answer_list[max_index]
+
+    # prompt = SEARCH_PROMPT.format(context=context, question=sentence)
+    # answer = get_chat_openai(prompt)
+
+    st.markdown("### 마크다운")
+    st.write(context)
+    # st.markdown("### 답변")
+    # st.write(answer)
