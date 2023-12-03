@@ -55,12 +55,14 @@ with st.spinner('답변 생성을 위한 사전 작업을 준비중입니다. �
     else:
         st.error(f'사전 작업이 다음 code로 실패하였습니다.: {status_code}')
 
-sentence = st.text_input("회사에 지원하게 된 동기에 대해서 설명해주세요.")
+question = st.radio("대답하고자 하는 질문을 선택해주세요.", ("지원 동기", "직무 관심 계시", "회사 경력", "프로젝트 경험", "성격의 장단점", "어려움 극복 과정"))
+sentence = st.text_area(question)
 if st.button("DB 내의 비슷한 질문에 대한 답변 찾아보기"):
     query_embedding = get_embedding(sentence)
     with open("self_introductions.pickle", "rb") as f:
         total_data = pickle.load(f)
 
+    question_list = total_data["question_list"]
     answer_list = total_data["answer_list"]
     question_embedding = total_data["question_embedding"]
 
@@ -70,12 +72,13 @@ if st.button("DB 내의 비슷한 질문에 대한 답변 찾아보기"):
     similarity_scores = cosine_similarity([query_embedding], context_embedding)
     max_index = np.argmax(similarity_scores) # TODO: argmax 말고 top3의 유사한 유사한 context를 얻어야 함 (few-shot으로 주기 위함)
 
-    context = answer_list[max_index]
+    retrieved_question = question_list[max_index]
+    retrieved_answer = answer_list[max_index]
 
     # prompt = SEARCH_PROMPT.format(context=context, question=sentence)
     # answer = get_chat_openai(prompt)
 
-    st.markdown("### 마크다운")
-    st.write(context)
+    st.markdown(f"### {retrieved_question}")
+    st.write(retrieved_answer)
     # st.markdown("### 답변")
     # st.write(answer)
