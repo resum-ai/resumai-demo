@@ -1,0 +1,13 @@
+.env
+
+__pycache__
+
+llm_application/pages/lib/__pycache__/
+
+venv
+
+.streamlit/
+
+.idea/
+
+.DS_Store
