@@ -56,11 +56,9 @@ with st.spinner('답변 생성을 위한 사전 작업을 준비중입니다. �
         st.error(f'사전 작업이 다음 code로 실패하였습니다.: {status_code}')
 
 question = st.radio("대답하고자 하는 질문을 선택해주세요.", ("지원 동기", "직무 관심 계기", "회사 경력", "프로젝트 경험", "성격의 장단점", "어려움 극복 과정"))
-sentence = st.text_area(question)
+user_answer = st.text_area(question)
 if st.button("DB 내의 비슷한 질문에 대한 답변 찾아보기"):
-    print(question, sentence)
-    print(sentence)
-    query_embedding = get_embedding(sentence)
+    query_embedding = get_embedding(user_answer)
     with open("self_introductions.pickle", "rb") as f:
         total_data = pickle.load(f)
 
