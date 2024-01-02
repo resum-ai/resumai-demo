@@ -4,9 +4,6 @@ import streamlit as st
 from pages.lib.openai_call import get_embedding, get_chat_openai
 from pages.lib.prompts import GENERATE_SELF_INTRODUCTION_PROMPT
 
-pinecone.init(api_key=st.secrets["PINECONE_API_KEY"], environment="gcp-starter")
-index = pinecone.Index("resumai-self-introduction-index")
-
 st.set_page_config(
     page_title="Hello",
     page_icon="👋",
@@ -22,6 +19,9 @@ user_answer = st.text_area(
 )
 
 if st.button("생성하기!"):
+    pinecone.init(api_key=st.secrets["PINECONE_API_KEY"], environment="gcp-starter")
+    index = pinecone.Index("resumai-self-introduction-index")
+
     query_embedding = get_embedding(user_answer)
 
     retrieved_data = index.query(vector=query_embedding, top_k=3, include_metadata=True)
