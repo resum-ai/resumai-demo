@@ -11,6 +11,3 @@ markdown = """
 """
 
 st.markdown(markdown)
-
-
-
