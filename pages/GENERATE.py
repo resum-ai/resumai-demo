@@ -1,46 +1,59 @@
-import pickle
+import pinecone
 import streamlit as st
-import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
+
 from pages.lib.openai_call import get_embedding, get_chat_openai
-from pages.lib.prompts import SEARCH_PROMPT
+from pages.lib.prompts import GENERATE_SELF_INTRODUCTION_PROMPT
+
+pinecone.init(api_key=st.secrets["PINECONE_API_KEY"], environment="gcp-starter")
+index = pinecone.Index("resumai-self-introduction-index")
 
 st.set_page_config(
     page_title="Hello",
     page_icon="👋",
 )
 
-
 question = st.radio(
-    "대답하고자 하는 질문을 선택해주세요.",
-    ("지원 동기", "직무 관심 계기", "회사 경력", "프로젝트 경험", "성격의 장단점", "어려움 극복 과정"),
+    "답변하고자 하는 질문을 선택해주세요.",
+    ("지원 동기", "직무 관심 계기", "회사 경력", "프로젝트 경험", "성격의 장단점", "어려움 극복 과정", "문제 해결 경험"),
 )
-user_answer = st.text_area(question)
-if st.button("DB 내의 비슷한 질문에 대한 답변 찾아보기"):
+
+user_answer = st.text_area(
+    label=question, placeholder=f"{question}에 대한 자신의 경험을 간단하게 소개해주세요.", height=400
+)
+
+if st.button("생성하기!"):
     query_embedding = get_embedding(user_answer)
-    with open("self_introductions.pickle", "rb") as f:
-        total_data = pickle.load(f)
 
-    question_list = total_data["question_list"]
-    answer_list = total_data["answer_list"]
-    question_embedding = total_data["question_embedding"]
+    retrieved_data = index.query(vector=query_embedding, top_k=3, include_metadata=True)
 
-    query_embedding = np.array(query_embedding)
-    context_embedding = np.array(question_embedding)
+    data = retrieved_data["matches"]
+    data_1_question = data[0]["metadata"]["question"]
+    data_1_answer = data[0]["metadata"]["answer"]
 
-    similarity_scores = cosine_similarity([query_embedding], context_embedding)
-    print(similarity_scores)
-    max_index = np.argmax(
-        similarity_scores
-    )  # TODO: argmax 말고 top3의 유사한 유사한 context를 얻어야 함 (few-shot으로 주기 위함)
+    data_2_question = data[1]["metadata"]["question"]
+    data_2_answer = data[1]["metadata"]["answer"]
 
-    retrieved_question = question_list[max_index]
-    retrieved_answer = answer_list[max_index]
+    data_3_question = data[2]["metadata"]["question"]
+    data_3_answer = data[2]["metadata"]["answer"]
 
-    # prompt = SEARCH_PROMPT.format(context=context, question=sentence)
-    # answer = get_chat_openai(prompt)
+    examples = f"Question: {data_1_question}, \n Answer: {data_1_answer}, \n\n " \
+               f"Question: {data_2_question}, \n Answer: {data_2_answer}, \n\n " \
+               f"Question: {data_3_question}, \n Answer: {data_3_answer}"
 
-    st.markdown(f"### {retrieved_question}")
-    st.write(retrieved_answer)
-    # st.markdown("### 답변")
-    # st.write(answer)
+    print(examples)
+
+    prompt = GENERATE_SELF_INTRODUCTION_PROMPT.format(
+        examples=examples, question=question, context=user_answer
+    )
+    print(prompt)
+    answer = get_chat_openai(prompt)
+
+    with st.spinner("답변을 생성중입니다. 잠시만 기다려주세요."):
+        if answer:
+            st.success("답변이 생성되었습니다!")
+        else:
+            st.error("답변 생성에 실패했습니다..")
+
+    print(answer)
+
+    st.write(answer)
