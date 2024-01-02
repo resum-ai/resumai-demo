@@ -19,7 +19,7 @@ def get_chat_openai(prompt, model="gpt-3.5-turbo"):
 
 
 def get_embedding(text, model="text-embedding-ada-002"):
-   text = text.replace("\n", " ")
-   response = client.embeddings.create(input=[text], model=model).data
-   response = response[0].embedding
-   return response
+    text = text.replace("\n", " ")
+    response = client.embeddings.create(input=[text], model=model).data
+    response = response[0].embedding
+    return response

@@ -1,6 +1,6 @@
 import json
 
-from prompts import SUMMARY_PROMPT
+from prompts import SUMMARY_PROMPT, GENERATE_SELF_INTRODUCTION_PROMPT
 from flask import Flask, request
 from openai_call import get_chat_openai
 
@@ -14,10 +14,7 @@ def llm_summary():
     # text = params["text"]
     # language = params["language"]
 
-    prompt = SUMMARY_PROMPT.format(text=""" Any request to read a sector will cause that sector and much or
-all the rest of the current track to be read, depending upon how
-much space is available in the controller’s cache memory
-•""", language='한국어')
+    prompt = GENERATE_SELF_INTRODUCTION_PROMPT.format(qa="", question="한국어", context="")
     result_summary = get_chat_openai(prompt)
     print(result_summary)
 

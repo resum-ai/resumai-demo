@@ -1,18 +1,21 @@
-SUMMARY_PROMPT = f"""{{text}}
----
-Must respond in {{language}}.
-Tl;dr
-"""
+# SUMMARY_PROMPT = f"""{{text}}
+# ---
+# Must respond in {{language}}.
+# Tl;dr
+# """
+#
+# TRANSLATE_PROMPT = f"""sentence={{text}}
+# ---
+# sentence를 번역해주세요.
+# Must respond in {{language}}.
+# """
 
-TRANSLATE_PROMPT = f"""sentence={{text}}
----
-sentence를 번역해주세요.
-Must respond in {{language}}.
-"""
 
+GENERATE_SELF_INTRODUCTION_PROMPT = f"""
+examples: {{qa}} \n
+Question: {{question}} \n
 
-SEARCH_PROMPT = f"""context={{context}} \n
-question={{question}} \n
+exmaples과 비슷한 형식으로 Question에 대한 대답을 다음을 참고하여 대답해 주세요. \n
 
-context를 기반으로 question에 대한 답변을 생성해주세요.
+Context: {{context}}
 """
