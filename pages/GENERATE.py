@@ -24,9 +24,10 @@ if st.button("생성하기!"):
 
     query_embedding = get_embedding(user_answer)
 
-    retrieved_data = index.query(vector=query_embedding, top_k=3, include_metadata=True)
+    retrieved_data = index.query(vector=query_embedding, top_k=5, include_metadata=True)
 
     data = retrieved_data["matches"]
+    print(data)
     data_1_question = data[0]["metadata"]["question"]
     data_1_answer = data[0]["metadata"]["answer"]
 
@@ -36,9 +37,11 @@ if st.button("생성하기!"):
     data_3_question = data[2]["metadata"]["question"]
     data_3_answer = data[2]["metadata"]["answer"]
 
-    examples = f"Question: {data_1_question}, \n Answer: {data_1_answer}, \n\n " \
-               f"Question: {data_2_question}, \n Answer: {data_2_answer}, \n\n " \
-               f"Question: {data_3_question}, \n Answer: {data_3_answer}"
+    examples = (
+        f"Question: {data_1_question}, \n Answer: {data_1_answer}, \n\n "
+        f"Question: {data_2_question}, \n Answer: {data_2_answer}, \n\n "
+        f"Question: {data_3_question}, \n Answer: {data_3_answer}"
+    )
 
     print(examples)
 

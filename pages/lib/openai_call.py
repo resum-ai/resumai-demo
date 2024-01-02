@@ -1,5 +1,3 @@
-import os
-
 import streamlit
 from openai import OpenAI
 
