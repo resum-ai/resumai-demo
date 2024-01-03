@@ -19,7 +19,7 @@ Question: {{question}} \n
 Context: {{context}} \n
 
 아래는 몇 가지 예시입니다.
-examples: {{examples}} 
+examples: \n {{examples}} 
 
 예시들과 저의 답변을 참고하여 질문에 대한 대답을 해 주세요.
 """
