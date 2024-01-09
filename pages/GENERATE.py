@@ -11,14 +11,19 @@ st.set_page_config(
 
 question = st.radio(
     "답변하고자 하는 질문을 선택해주세요.",
-    ("지원 동기", "직무 관심 계기", "회사 경력", "프로젝트 경험", "성격의 장단점", "어려움 극복 과정", "문제 해결 경험"),
+    ("지원 동기", "직무 관심 계기", "회사 경력", "프로젝트 경험", "성격의 장단점", "어려움 극복 과정", "문제 해결 경험", "기타"),
 )
+if question == "기타":
+    question = st.text_input("질문 내용을 직접 작성해주세요.")
+
+if st.button("가이드라인 생성하기!"):
+    print(question)
 
 user_answer = st.text_area(
     label=question, placeholder=f"{question}에 대한 자신의 경험을 간단하게 소개해주세요.", height=300
 )
 
-if st.button("생성하기!"):
+if st.button("자기소개서 생성하기!"):
     with st.spinner("답변을 생성중입니다. 잠시만 기다려주세요."):
 
         pinecone.init(api_key=st.secrets["PINECONE_API_KEY"], environment="gcp-starter")
