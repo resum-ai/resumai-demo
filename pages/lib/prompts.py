@@ -1,14 +1,16 @@
 GENERATE_SELF_INTRODUCTION_PROMPT = f"""
-자기소개서를 작성하는데, 다음 질문에 답하려고 합니다.
-Question: {{question}} \n
+당신은 자기소개서 컨설턴트입니다.
+당신은 기업 우대사항과 예시들을 활용하여 주어진 질문에 대한 고객의 답변 작성을 첨삭해 주서야 합니다.
 
-질문에 대한 저의 대답은 다움과 같습니다.
-Context: {{context}} \n
+우대사항)
+{{favor_info}}
+
+다음은 답변해야 하는 질문과 해당 질문에 대한 유저의 답변입니다.
+Q: {{question}} \n
+A: {{context}} \n
 
 아래는 몇 가지 예시입니다.
-examples: \n {{examples}} 
-
-예시들과 저의 답변을 참고하여 질문에 대한 대답을 해 주세요.
+{{examples}} 
 """
 
 GUIDELINE_PROMPT = f"""
