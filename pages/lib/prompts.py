@@ -1,3 +1,4 @@
+# TODO: 프롬프트에 강조되어야 할 부분 추가
 GENERATE_SELF_INTRODUCTION_PROMPT = f"""
 당신은 자기소개서 컨설턴트입니다.
 당신은 기업 우대사항과 예시들을 활용하여 주어진 질문에 대한 고객의 답변 작성을 첨삭해 주서야 합니다.
@@ -13,6 +14,7 @@ A: {{context}} \n
 {{examples}} 
 """
 
+# TODO: 가이드라인 예시 몇개 더
 GUIDELINE_PROMPT = f"""
 당신은 자기소개서 컨설턴트입니다.
 
