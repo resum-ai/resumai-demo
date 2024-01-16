@@ -11,3 +11,5 @@ llm_application/pages/lib/__pycache__/
 .idea/
 
 .DS_Store
+
+self_introduction_data.db

@@ -8,7 +8,7 @@ GENERATE_SELF_INTRODUCTION_PROMPT = f"""
 
 다음은 답변해야 하는 질문과 해당 질문에 대한 유저의 답변입니다.
 Q: {{question}} \n
-A: {{context}} \n
+A: {{context}}
 
 아래는 몇 가지 예시입니다.
 {{examples}} 
