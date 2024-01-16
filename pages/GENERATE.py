@@ -1,4 +1,5 @@
 import json
+from pages.lib.database_utils import DatabaseManager
 
 import pinecone
 import streamlit as st
@@ -11,11 +12,15 @@ st.set_page_config(
     page_icon="👋",
 )
 
+db_manager = DatabaseManager("self_introduction_data.db")
+# 테이블 생성
+db_manager.create_table()
+
+
+favor_info = ""
 ground_guideline = ""
 with open("pages/lib/guideline_data.json", "r", encoding="utf-8") as file:
     ground_guideline = json.load(file)
-
-favor_info = ""
 
 # 세션 state로 상태 유지
 if "guideline_list" not in st.session_state:
@@ -40,7 +45,7 @@ if st.button("가이드라인 생성하기!"):
         except KeyError:
             prompt = GUIDELINE_PROMPT.format(question=question)
 
-            # 프롬프트로 생성한 가이드라인
+            # 생성된 가이드라인
             guideline_string = get_chat_openai(prompt)
 
             # 생성된 string 형태의 가이드라인을 list로 변환
@@ -49,16 +54,16 @@ if st.button("가이드라인 생성하기!"):
             )
 
 
-# 각 가이드라인별로 text 입력 필드 생성
+# 각 가이드라인별로 text 입력 필드란 생성
 for idx, guideline in enumerate(st.session_state["guideline_list"]):
     st.session_state["user_answer"][guideline] = st.text_area(
         label=guideline,
         placeholder=guideline,
         height=200,
-        key=f"guideline_{idx}",  # 각 text_area에 고유한 key 제공
+        key=f"guideline_{idx}",
     )
 
-# 기업 우대사항
+# 기업 우대사항 작성란
 if st.session_state["guideline_list"]:
     favor_info = st.text_area(
         label="기업 공고의 우대사항을 작성해 주세요.", placeholder="우대사항", height=200
@@ -69,12 +74,10 @@ if st.session_state["user_answer"]:
         with st.spinner("답변을 생성중입니다. 잠시만 기다려주세요."):
             # 답변 취합
             saved_self_introduction = ""
-
             for guideline in st.session_state["guideline_list"]:
                 saved_self_introduction += (
                     f'{st.session_state["user_answer"][guideline]} \n\n'
                 )
-            print(saved_self_introduction)
 
             # vectorDB에서 유사한 데이터 검색
             pinecone.init(
@@ -82,44 +85,53 @@ if st.session_state["user_answer"]:
             )
             index = pinecone.Index("resumai-self-introduction-index")
 
-            query_embedding = get_embedding(
-                saved_self_introduction
-            )  # 유저가 질문에 답변한 것을 임베딩
+            # 유저 답변 임베딩
+            query_embedding = get_embedding(saved_self_introduction)
+            # 유사한 top 3개의 답변 retrieval
             retrieved_data = index.query(
                 vector=query_embedding, top_k=3, include_metadata=True
-            )  # 유사한 top 3개의 답변
-
+            )
+            # 가져온 데이터
             data = retrieved_data["matches"]
 
-            data_1_question = data[0]["metadata"]["question"]
-            data_1_answer = data[0]["metadata"]["answer"]
+            examples = []
 
-            data_2_question = data[1]["metadata"]["question"]
-            data_2_answer = data[1]["metadata"]["answer"]
+            for i, example_qa in enumerate(data[:3], start=1):
+                example_question = example_qa["metadata"]["question"]
+                example_answer = example_qa["metadata"]["answer"]
+                example = f"예시{i}) \nQuestion: {example_question}, \nAnswer: {example_answer}\n\n"
+                examples.append(example)
 
-            data_3_question = data[2]["metadata"]["question"]
-            data_3_answer = data[2]["metadata"]["answer"]
-
-            # 프롬프트 예시
-            examples = (
-                f"예시1) \n Question: {data_1_question}, \n Answer: {data_1_answer}, \n\n "
-                f"예시2) \n Question: {data_2_question}, \n Answer: {data_2_answer}, \n\n "
-                f"예시3) \nQuestion: {data_3_question}, \n Answer: {data_3_answer}"
-            )
+            examples_str = "".join(examples).strip()
 
             prompt = GENERATE_SELF_INTRODUCTION_PROMPT.format(
                 favor_info=favor_info,
                 question=question,
                 context=saved_self_introduction,
-                examples=examples,
+                examples=examples_str,
             )
 
-            answer = get_chat_openai(prompt)
+            print(question)
 
-            if answer:
+            generated_self_introduction = get_chat_openai(prompt)
+
+            if generated_self_introduction:
                 st.success("답변이 생성되었습니다!")
-                st.write(answer)
+                st.write(generated_self_introduction)
             else:
                 st.error("답변 생성에 실패했습니다..")
 
-            print(answer)
+            # db 저장을 위해 list에서 json으로 변경
+            generated_guideline_json = json.dumps(st.session_state["guideline_list"])
+
+            db_manager.save_to_db(
+                question,
+                generated_guideline_json,
+                saved_self_introduction,
+                favor_info,
+                examples_str,
+                generated_self_introduction,
+            )
+
+            # 데이터베이스 연결 종료
+            db_manager.close()
