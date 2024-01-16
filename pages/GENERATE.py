@@ -7,6 +7,54 @@ import streamlit as st
 from pages.lib.openai_call import get_embedding, get_chat_openai
 from pages.lib.prompts import GENERATE_SELF_INTRODUCTION_PROMPT, GUIDELINE_PROMPT
 
+
+def create_guidelines(question):
+    try:
+        if question in ground_guideline:
+            return ground_guideline[question]
+        else:
+            prompt = GUIDELINE_PROMPT.format(question=question)
+            guideline_string = get_chat_openai(prompt)
+            return json.loads(guideline_string.replace("'", '"'))
+    except Exception as e:
+        st.error("가이드라인 생성 중 오류가 발생했습니다.")
+        print(e)
+        return []
+
+
+def generate_self_introduction(
+    favor_info, question, saved_self_introduction, examples_str
+):
+    try:
+        prompt = GENERATE_SELF_INTRODUCTION_PROMPT.format(
+            favor_info=favor_info,
+            question=question,
+            context=saved_self_introduction,
+            examples=examples_str,
+        )
+        generated_self_introduction = get_chat_openai(prompt)
+        return generated_self_introduction
+    except Exception as e:
+        st.error("자기소개서 생성 중 오류가 발생했습니다.")
+        print(e)
+        return None
+
+
+def retrieve_similar_answers(saved_self_introduction):
+    try:
+        pinecone.init(api_key=st.secrets["PINECONE_API_KEY"], environment="gcp-starter")
+        index = pinecone.Index("resumai-self-introduction-index")
+        query_embedding = get_embedding(saved_self_introduction)
+        retrieved_data = index.query(
+            vector=query_embedding, top_k=3, include_metadata=True
+        )
+        return retrieved_data["matches"]
+    except Exception as e:
+        st.error("유사한 답변 검색 중 오류가 발생했습니다.")
+        print(e)
+        return []
+
+
 st.set_page_config(
     page_title="Hello",
     page_icon="👋",
@@ -40,18 +88,7 @@ if question == "기타":
 
 if st.button("가이드라인 생성하기!"):
     with st.spinner("가이드라인을 생성중입니다. 잠시만 기다려주세요."):
-        try:
-            st.session_state["guideline_list"] = ground_guideline[question]
-        except KeyError:
-            prompt = GUIDELINE_PROMPT.format(question=question)
-
-            # 생성된 가이드라인
-            guideline_string = get_chat_openai(prompt)
-
-            # 생성된 string 형태의 가이드라인을 list로 변환
-            st.session_state["guideline_list"] = json.loads(
-                guideline_string.replace("'", '"')
-            )
+        st.session_state["guideline_list"] = create_guidelines(question)
 
 
 # 각 가이드라인별로 text 입력 필드란 생성
@@ -73,36 +110,19 @@ if st.session_state["user_answer"]:
     if st.button("자기소개서 생성하기!"):
         with st.spinner("답변을 생성중입니다. 잠시만 기다려주세요."):
             # 답변 취합
-            saved_self_introduction = ""
-            for guideline in st.session_state["guideline_list"]:
-                saved_self_introduction += (
-                    f'{st.session_state["user_answer"][guideline]} \n\n'
-                )
-
-            # vectorDB에서 유사한 데이터 검색
-            pinecone.init(
-                api_key=st.secrets["PINECONE_API_KEY"], environment="gcp-starter"
+            saved_self_introduction = "\n\n".join(
+                [
+                    st.session_state["user_answer"][guideline]
+                    for guideline in st.session_state["guideline_list"]
+                ]
             )
-            index = pinecone.Index("resumai-self-introduction-index")
-
-            # 유저 답변 임베딩
-            query_embedding = get_embedding(saved_self_introduction)
-            # 유사한 top 3개의 답변 retrieval
-            retrieved_data = index.query(
-                vector=query_embedding, top_k=3, include_metadata=True
+            examples = retrieve_similar_answers(saved_self_introduction)
+            examples_str = "\n\n".join(
+                [
+                    f"예시{i}) \nQuestion: {ex['metadata']['question']} \nAnswer: {ex['metadata']['answer']}"
+                    for i, ex in enumerate(examples, start=1)
+                ]
             )
-            # 가져온 데이터
-            data = retrieved_data["matches"]
-
-            examples = []
-
-            for i, example_qa in enumerate(data[:3], start=1):
-                example_question = example_qa["metadata"]["question"]
-                example_answer = example_qa["metadata"]["answer"]
-                example = f"예시{i}) \nQuestion: {example_question}, \nAnswer: {example_answer}\n\n"
-                examples.append(example)
-
-            examples_str = "".join(examples).strip()
 
             prompt = GENERATE_SELF_INTRODUCTION_PROMPT.format(
                 favor_info=favor_info,
@@ -110,10 +130,11 @@ if st.session_state["user_answer"]:
                 context=saved_self_introduction,
                 examples=examples_str,
             )
+            print(prompt)
 
-            print(question)
-
-            generated_self_introduction = get_chat_openai(prompt)
+            generated_self_introduction = generate_self_introduction(
+                favor_info, question, saved_self_introduction, examples_str
+            )
 
             if generated_self_introduction:
                 st.success("답변이 생성되었습니다!")
