@@ -1,11 +1,12 @@
 import json
-from pages.lib.database_utils import DatabaseManager
 
 import pinecone
 import streamlit as st
 
 from pages.lib.openai_call import get_embedding, get_chat_openai
 from pages.lib.prompts import GENERATE_SELF_INTRODUCTION_PROMPT, GUIDELINE_PROMPT
+
+from pages.lib.gspread_utils import add_data_to_sheet
 
 
 def create_guidelines(question):
@@ -60,10 +61,6 @@ st.set_page_config(
     page_icon="👋",
 )
 
-db_manager = DatabaseManager("self_introduction_data.db")
-# 테이블 생성
-db_manager.create_table()
-
 
 favor_info = ""
 ground_guideline = ""
@@ -98,8 +95,9 @@ question = st.radio(
 
 if question == "기타":
     question = st.text_area(
-        label="질문 내용을 직접 작성해주세요.", placeholder="질문 내용을 직접 작성해주세요.", height=100,
-
+        label="질문 내용을 직접 작성해주세요.",
+        placeholder="질문 내용을 직접 작성해주세요.",
+        height=100,
     )
 
 if st.button("가이드라인 생성하기!"):
@@ -119,7 +117,7 @@ for idx, guideline in enumerate(st.session_state["guideline_list"]):
 # 기업 우대사항 작성란
 if st.session_state["guideline_list"]:
     favor_info = st.text_area(
-        label="기업 공고의 우대사항을 작성해 주세요.", placeholder="우대사항", height=200
+        label="기업 공고의 조직 소개 및 우대사항을 작성해 주세요.", placeholder="우대사항", height=200
     )
 
 if st.session_state["user_answer"]:
@@ -153,22 +151,24 @@ if st.session_state["user_answer"]:
             )
 
             if generated_self_introduction:
-                st.success("답변이 생성되었습니다!")
-                st.write(generated_self_introduction)
+                guideline_str = '\n'.join(f"{i + 1}. {item}" for i, item in enumerate(st.session_state["guideline_list"]))
+                result = add_data_to_sheet(
+                    question,
+                    guideline_str,
+                    saved_self_introduction,
+                    favor_info,
+                    examples_str,
+                    generated_self_introduction,
+                )
+                if result["status"] == "success":
+                    print("Data was added successfully!")
+                    st.success("답변이 생성되었습니다!")
+                    st.write(generated_self_introduction)
+                else:
+                    print(
+                        f"Failed to add data: {result['message']} with code {result['code']}"
+                    )
             else:
                 st.error("답변 생성에 실패했습니다..")
 
-            # db 저장을 위해 list에서 json으로 변경
-            generated_guideline_json = json.dumps(st.session_state["guideline_list"])
 
-            db_manager.save_to_db(
-                question,
-                generated_guideline_json,
-                saved_self_introduction,
-                favor_info,
-                examples_str,
-                generated_self_introduction,
-            )
-
-            # 데이터베이스 연결 종료
-            db_manager.close()

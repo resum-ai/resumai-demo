@@ -1,4 +1,6 @@
 import streamlit as st
+import gspread
+
 
 st.set_page_config(
     page_title="RESUMAI",
