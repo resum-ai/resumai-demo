@@ -76,6 +76,21 @@ if "guideline_list" not in st.session_state:
 if "user_answer" not in st.session_state:
     st.session_state["user_answer"] = {}
 
+st.markdown(
+    """
+    <style>
+    .stTextArea p {
+        font-size: 1.2rem !important;
+        font-family: 
+    }
+    .st-emotion-cache-ue6h4q  p {
+        font-size: 1.2rem !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 question = st.radio(
     "답변하고자 하는 질문을 선택하여 가이드라인을 생성해 보세요.",
     ("지원 동기", "직무 관심 계기", "회사 경력", "프로젝트 경험", "성격의 장단점", "어려움 극복 과정", "문제 해결 경험", "기타"),
@@ -83,7 +98,8 @@ question = st.radio(
 
 if question == "기타":
     question = st.text_area(
-        label="질문 내용을 직접 작성해주세요.", placeholder="질문 내용을 직접 작성해주세요.", height=100
+        label="질문 내용을 직접 작성해주세요.", placeholder="질문 내용을 직접 작성해주세요.", height=100,
+
     )
 
 if st.button("가이드라인 생성하기!"):
