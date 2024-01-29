@@ -50,3 +50,22 @@ def add_data_to_sheet(
     except Exception as e:
         # 기타 예외 처리
         return {"status": "error", "code": 500, "message": str(e)}
+
+
+def add_comment_to_sheet(user_comment):
+    try:
+        # 마지막으로 데이터를 추가한 행을 찾기
+        last_row = worksheet.row_count
+
+        # 마지막 열(예: Comments 열)의 번호를 찾기
+        comment_column_number = worksheet.col_count
+
+        # 마지막 행의 'Comments' 열에 데이터 업데이트
+        worksheet.update_cell(last_row, comment_column_number, user_comment)
+        return {"status": "success", "code": 200}
+    except gspread.exceptions.APIError as e:
+        # Google Sheets API 에러 처리
+        return {"status": "error", "code": e.response.status_code, "message": str(e)}
+    except Exception as e:
+        # 기타 예외 처리
+        return {"status": "error", "code": 500, "message": str(e)}

@@ -8,6 +8,8 @@ from pages.lib.prompts import GENERATE_SELF_INTRODUCTION_PROMPT, GUIDELINE_PROMP
 
 from pages.lib.gspread_utils import add_data_to_sheet
 
+from pages.lib.gspread_utils import add_comment_to_sheet
+
 
 def create_guidelines(question):
     try:
@@ -61,9 +63,11 @@ st.set_page_config(
     page_icon="👋",
 )
 
-
 favor_info = ""
 ground_guideline = ""
+generated_self_introduction = ""
+user_comment = ""
+
 with open("pages/lib/guideline_data.json", "r", encoding="utf-8") as file:
     ground_guideline = json.load(file)
 
@@ -116,9 +120,14 @@ for idx, guideline in enumerate(st.session_state["guideline_list"]):
 
 # 기업 우대사항 작성란
 if st.session_state["guideline_list"]:
+    free_list = st.text_area(
+        label="작성하고자 하는 글을 자유롭게 작성해 주세요.", placeholder="자유 작성란", height=200
+    )
+
     favor_info = st.text_area(
         label="기업 공고의 조직 소개 및 우대사항을 작성해 주세요.", placeholder="우대사항", height=200
     )
+
 
 if st.session_state["user_answer"]:
     if st.button("자기소개서 생성하기!"):
@@ -130,6 +139,8 @@ if st.session_state["user_answer"]:
                     for guideline in st.session_state["guideline_list"]
                 ]
             )
+            saved_self_introduction += free_list
+
             examples = retrieve_similar_answers(saved_self_introduction)
             examples_str = "\n\n".join(
                 [
@@ -151,7 +162,10 @@ if st.session_state["user_answer"]:
             )
 
             if generated_self_introduction:
-                guideline_str = '\n'.join(f"{i + 1}. {item}" for i, item in enumerate(st.session_state["guideline_list"]))
+                guideline_str = "\n".join(
+                    f"{i + 1}. {item}"
+                    for i, item in enumerate(st.session_state["guideline_list"])
+                )
                 result = add_data_to_sheet(
                     question,
                     guideline_str,
@@ -164,6 +178,7 @@ if st.session_state["user_answer"]:
                     print("Data was added successfully!")
                     st.success("답변이 생성되었습니다!")
                     st.write(generated_self_introduction)
+
                 else:
                     print(
                         f"Failed to add data: {result['message']} with code {result['code']}"
@@ -171,4 +186,10 @@ if st.session_state["user_answer"]:
             else:
                 st.error("답변 생성에 실패했습니다..")
 
-
+if generated_self_introduction:
+    user_comment = st.text_area(
+        label="RESUMAI를 사용해주셔서 감사합니다. 후기를 남겨주시면 매우 감사하겠습니다. 😃",
+        placeholder="느꼈던 좋은 점, 불편했던 점 등에 대해 자유롭게 후기를 남겨 주세요.",
+    )
+    if st.button("후기 남기기!"):
+        add_comment_to_sheet(user_comment)
