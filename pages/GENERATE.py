@@ -116,9 +116,14 @@ for idx, guideline in enumerate(st.session_state["guideline_list"]):
 
 # 기업 우대사항 작성란
 if st.session_state["guideline_list"]:
+    free_list = st.text_area(label="작성하고자 하는 글을 자유롭게 작성해 주세요.", placeholder="자유 작성란", height=200)
+
     favor_info = st.text_area(
         label="기업 공고의 조직 소개 및 우대사항을 작성해 주세요.", placeholder="우대사항", height=200
     )
+
+
+
 
 if st.session_state["user_answer"]:
     if st.button("자기소개서 생성하기!"):
@@ -130,6 +135,8 @@ if st.session_state["user_answer"]:
                     for guideline in st.session_state["guideline_list"]
                 ]
             )
+            saved_self_introduction += free_list
+
             examples = retrieve_similar_answers(saved_self_introduction)
             examples_str = "\n\n".join(
                 [
@@ -151,7 +158,10 @@ if st.session_state["user_answer"]:
             )
 
             if generated_self_introduction:
-                guideline_str = '\n'.join(f"{i + 1}. {item}" for i, item in enumerate(st.session_state["guideline_list"]))
+                guideline_str = "\n".join(
+                    f"{i + 1}. {item}"
+                    for i, item in enumerate(st.session_state["guideline_list"])
+                )
                 result = add_data_to_sheet(
                     question,
                     guideline_str,
@@ -170,5 +180,3 @@ if st.session_state["user_answer"]:
                     )
             else:
                 st.error("답변 생성에 실패했습니다..")
-
-
